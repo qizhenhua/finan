@@ -1,5 +1,6 @@
 # www.uqer.io
 # login and "start research"
+# copy and paste below cods to notebook and run it
 
 fundlist=["000961","001593"]  # Put fundation list in this list
 for mychoice in fundlist:
