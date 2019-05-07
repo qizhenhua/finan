@@ -15,39 +15,38 @@ for i in a:
         NAVlist.append(float(c))
         datelist.append(b[1])
 
-def calculate(startN,endN,initA,mylist,limit):
-    share=0.0
-    money=0.0
-    rate=0.0
-    targetrates=[]
-    dateseq=[]
-    base=0.0
-    for i in range(startN,endN):
-        share=initA/mylist[i]+share
-        money=share*mylist[i]
-        base=initA*(i-startN+1)
+def invest(StartN,initA,mylist,limit):
+    share,money,rate,base,i=0.0,0.0,0.0,0.0,0
+    while rate<=limit and StartN+i<len(mylist):
+        share=initA/mylist[StartN+i]+share
+        money=share*mylist[StartN+i]
+        base=initA*(i+1)
         rate=money/base-1
-        if rate>=limit:
-            targetrates.append(rate)
-            dateseq.append(i-startN)
-        #print("%d,%f3,%f,%f3"%(i,rate,base,money))
-    result=list(zip(dateseq,targetrates))
-    #print("The last result: %f,%f,%f"%(rate,base,money))
-    print("You have %d chances to save money!"% len(result),end="-->")
-    if dateseq==[]:
-        print("You will lost money! %f of %f"%( (money-base),base))
+        i+=1
+    flag=""
+    if StartN+i==len(mylist):
+        print("Bad->Start: %s, price %f, you need to wait"% (datelist[StartN],NAVlist[StartN]))
+        flag="bad"
     else:
-        print("The first/last chance is in the %d & %d days!"% (dateseq[0],dateseq[len(dateseq)-1]))
-    return result
+        if i>20 and i<64: # 1 to 3 months
+            flag="good"
+            print("Good invest-->",end=" ")
+        else:
+            flag="not good"
+        print("Start: %s, price %f, End: %s, price %f, bonus rate: %f,invest money %f, back money %f at %dth days."
+              %(datelist[StartN],NAVlist[StartN],datelist[StartN+i],NAVlist[StartN+i],rate,base,money,i))
+    return flag
 
-#start=int(input("Input start N(date): "))
-#end=int(input("Input end N(date): "))
-#a=float(input("Input money every day: "))
-#calculate(start,end,a,NAVlist)
-#print("You should have base %f"%(a*(end-start)))
-for i in range(0,len(NAVlist)-100):
-    print("Start:",datelist[i],end="--")
-    calculate(i,i+99,20,NAVlist,0.025)
+countbad,countgood=0,0
+for j in range(0, len(NAVlist)):
+    myflag=invest(j,10,NAVlist,0.04)
+    if myflag=="good":
+        countgood+=1
+    if myflag=="bad":
+        countbad+=1
+print("Result: you have invest %d times, good %d(%f%%), bad %d(%f%%), other %d(%f%%)"
+          %(j,countgood,(countgood/j*100),countbad,(countbad/j*100),j-countgood-countbad,((j-countgood-countbad)/j*100)))
+
 
 
 #if you want to make it as a module, remove below code's #
