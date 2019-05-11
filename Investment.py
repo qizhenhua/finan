@@ -92,7 +92,7 @@ class Investment(object):
             result += i[0]/i[1]
         return result
 
-    def pricebalance(self):
+    def priceaverage(self):
         return self.capitalinvested()/self.sharesaved()
 
     def buy(self,date,money):
@@ -133,6 +133,7 @@ class Investment(object):
             i += 1
 
     def investstrategy01(self,datestart,moneypiece,ratetarget,daysmin,):
+        """Set a bonus rate target, if reach the bonus rate, sell the share"""
         days = 0
         dateend=self.Datelist[-1]
         mydatelist=self.dataperiod(datestart,dateend)["date"]
@@ -144,6 +145,9 @@ class Investment(object):
         return datetrade
 
     def investstrategy02(self,datestart,moneypiece,ratetarget,daysmin,ratelowerlimit=-100,factor=0):
+        """Set a bonus rate garget, in investing period, buy more share (factor * moneypiece) when
+           price fall over lower limit
+        """
         days = 0
         dateend=self.Datelist[-1]
         mydatelist=self.dataperiod(datestart,dateend)["date"]
@@ -153,13 +157,34 @@ class Investment(object):
             days += 1
             if days> daysmin and self.sell(datetrade)["rate"] >= ratetarget:
                 break
-            temp=self.dateprevious(datetrade,3)
-            temp=self.NAVaverage(temp[0],temp[-1])
-            temp=(self.tableNAV[datetrade] - temp)/ temp
+            #below codes are different from previous strategy
+            temp=self.dateprevious(datetrade,3) # trade day previous 3 days
+            temp=self.NAVaverage(temp[0],temp[-1])  #get it average price
+            temp=(self.tableNAV[datetrade] - temp)/ temp  #calculate down rate
             if  temp < ratelowerlimit: # and self.tableNAV[datetrade] < 1.45:
                 self.buy(datetrade,moneypiece*factor)
                 print(temp)
             dateprevious=datetrade
+        return datetrade
+
+    def investstrategy03(self,datestart,moneypiece,ratetarget,daysmin,factor=0):
+        """Set a bonus rate garget, in investing period, buy more share (factor * moneypiece) when
+           price fall over average price.
+        """
+        days = 0
+        dateend=self.Datelist[-1]
+        mydatelist=self.dataperiod(datestart,dateend)["date"]
+        dateprevious=datestart
+        for datetrade in mydatelist:
+            self.buy(datetrade,moneypiece)
+            days += 1
+            if days> daysmin and self.sell(datetrade)["rate"] >= ratetarget:
+                break
+            #below codes are different from previous strategy
+            
+            pricecurrent=self.tableNAV[datetrade]  #calculate down rate
+            if  pricecurrent < 0.98*self.priceaverage(): # it worth buy
+                self.buy(datetrade,moneypiece*factor)
         return datetrade
 
     def testing01(self):
@@ -168,27 +193,38 @@ class Investment(object):
 a=Investment("001593")
 buydate="2018-01-04"
 selldate="2019-04-01"
-
+print("investing from %s"%buydate)
+print("-------------regular investing:---------")
 a.investregular(buydate,selldate,10)
 print(a.sell(selldate))
+print(selldate)
 a.clearaccount()
-
+print("-------------Strategy 1:---------")
 b=a.investstrategy01(buydate,10,0.10,10)
 print(a.sell(b))
 print(b)
 a.clearaccount()
 
-print("Strategy 2:")
-start=buydate
-for i in range(5):
-    b=a.investstrategy02(start,10,0.05,10,-0.03,100)
-    print(a.sell(b))
-    print(b)
-    start=a.datenext(b,2)[-1]
-    print("next day %s"%start)
+print("-------------Strategy 2:---------")
 
-    #a.printinvestment(buydate,b)
-    a.clearaccount()
+b=a.investstrategy02(buydate,10,0.12,10,-0.04,50)
+print(a.sell(b))
+print(b)
+a.clearaccount()
+
+b=a.investstrategy02(b,10,0.12,10,-0.04,50)
+print(a.sell(b))
+print(b)
+a.clearaccount()
+
+print("-------------Strategy 3:---------")
+temp="2019-01-15"
+b=a.investstrategy03(temp,10,0.20,10,10)
+print(a.sell(b))
+print(b)
+a.printinvestment(temp,b)
+a.clearaccount()
+
 
 #if you want to make it as a module, remove below code's #
 #def main():
