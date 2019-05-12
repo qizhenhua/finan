@@ -4,13 +4,9 @@
 #Usage:
 #code is below.
 
-# #fundlist=["001016","001593","002385","002903","002987","003766","004342","004343","004348","004744","004870",
-# #          "005633","005658","005918","005919","006087","006131","006912","070039","160724","260108","501037",
-# #          "519019"]
-
 class Investment(object):
     import datetime
-    def __init__(self,fundcode):
+    def __init__(self,fundcode="001593"):
         self.Datelist=[]
         self.NAVlist=[]
         self.Investlist=[]
@@ -163,11 +159,10 @@ class Investment(object):
             temp=(self.tableNAV[datetrade] - temp)/ temp  #calculate down rate
             if  temp < ratelowerlimit: # and self.tableNAV[datetrade] < 1.45:
                 self.buy(datetrade,moneypiece*factor)
-                print(temp)
             dateprevious=datetrade
         return datetrade
 
-    def investstrategy03(self,datestart,moneypiece,ratetarget,daysmin,factor=0):
+    def investstrategy03(self,datestart,moneypiece=10,ratetarget=0.20,daysmin=10,factor=10):
         """Set a bonus rate garget, in investing period, buy more share (factor * moneypiece) when
            price fall over average price.
         """
@@ -190,40 +185,45 @@ class Investment(object):
     def testing01(self):
         pass
 
-a=Investment("001593")
-buydate="2018-01-04"
-selldate="2019-04-01"
-print("investing from %s"%buydate)
-print("-------------regular investing:---------")
-a.investregular(buydate,selldate,10)
-print(a.sell(selldate))
-print(selldate)
-a.clearaccount()
-print("-------------Strategy 1:---------")
-b=a.investstrategy01(buydate,10,0.10,10)
-print(a.sell(b))
-print(b)
-a.clearaccount()
+fundlist=["001016","001593","002385","002903","002987","003766","004342","004343","004348","004744","004870",
+          "005633","005658","005918","005919","006087","006131","006912","070039","160724","260108","501037",
+          "519019"]
 
-print("-------------Strategy 2:---------")
+for fundname in fundlist:
+    a=Investment(fundname)
+    buydate="2018-01-04"
+    selldate="2019-04-01"
+    print("investing from %s to %s-----------------------------------"%(buydate,fundname))
+    print("-------------regular investing:---------")
+    a.investregular(buydate,selldate,10)
+    print(a.sell(selldate))
+    print(selldate)
+    a.clearaccount()
+    print("-------------Strategy 1:---------")
+    b=a.investstrategy01(buydate,10,0.10,10)
+    print(a.sell(b))
+    print(b)
+    a.clearaccount()
 
-b=a.investstrategy02(buydate,10,0.12,10,-0.04,50)
-print(a.sell(b))
-print(b)
-a.clearaccount()
+##    print("-------------Strategy 2:---------")
+##
+##    b=a.investstrategy02(buydate,10,0.12,10,-0.04,50)
+##    print(a.sell(b))
+##    print(b)
+##    a.clearaccount()
+##
+##    b=a.investstrategy02(b,10,0.12,10,-0.04,50)
+##    print(a.sell(b))
+##    print(b)
+##    a.clearaccount()
 
-b=a.investstrategy02(b,10,0.12,10,-0.04,50)
-print(a.sell(b))
-print(b)
-a.clearaccount()
-
-print("-------------Strategy 3:---------")
-temp="2019-01-15"
-b=a.investstrategy03(temp,10,0.20,10,10)
-print(a.sell(b))
-print(b)
-a.printinvestment(temp,b)
-a.clearaccount()
+    print("-------------Strategy 3:---------")
+    temp="2018-01-24"
+    b=a.investstrategy03(temp,10,0.20,10,10)
+    print(a.sell(b))
+    print(b)
+    #a.printinvestment(temp,b)
+    a.clearaccount()
 
 
 #if you want to make it as a module, remove below code's #
