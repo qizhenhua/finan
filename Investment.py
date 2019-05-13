@@ -88,8 +88,46 @@ class Investment(object):
             result += i[0]/i[1]
         return result
 
-    def priceaverage(self):
+    def pricestock(self):
         return self.capitalinvested()/self.sharesaved()
+
+    def howmuchmoney2makestockpricedown(self,rate,pricetrade):
+        """
+        "I cann't control market price, but I can change my stock share price"---Qi Zhenhua 
+        This function caluculate that how much money to change the stockprice (down or up)
+        with rate, use pricetrade. base below setp:
+        -----First, we have those equal functions
+        shareadded=money/pricetrade     #1
+        sharetotal=shareadded+self.sharesaved() #2
+        moneytotal=money+self.capitalinvested() #3
+        pricefinal=moneytotal/sharetotal #4
+        rate=(pricefinal-self.pricestock())/self.pricestock() #5
+
+        -----Now we change #5:
+        pricefinal=self.pricestock()*(1+rate)  # 6
+        -----Combine #3 and #4, we get:
+        pricefinal=(money+self.capitalinvested())/sharetotal #7
+        -----Continue change #7:
+        money = pricefinal*sharetotal-self.capitalinvested() #7'
+        -----Input #2 to #7':
+        money = pricefinal*(shareadded+self.sharesaved())-self.capitalinvested()  #8
+        -----Input #1 to #8:
+        money = pricefinal*(money/pricetrade+self.sharesaved())-self.capitalinvested()
+              = money*pricefinal/pricetrade+pricefinal*self.sharesaved()-self.capitalinvested()
+        (1-pricefinal/pricetrade)*money = pricefinal*self.sharesaved()-self.capitalinvested()
+        money=(pricefinal*self.sharesaved()-self.capitalinvested())/(1-pricefinal/pricetrade) #9
+
+        -----Use #9 and #6, to make codes run    
+        
+        """
+        ratelimit=(pricetrade-self.pricestock())/self.pricestock()  # the rate cann't out of range.
+        money = 0
+        if rate > -abs(ratelimit) and rate < abs(ratelimit):
+            pricefinal=self.pricestock()*(1+rate)
+            money=(pricefinal*self.sharesaved()-self.capitalinvested())/(1-pricefinal/pricetrade)
+        else:
+            print("rate must between +/- %f !"%abs(ratelimit))
+        return money
 
     def buy(self,date,money):
         i=self.indexdate(date)
@@ -162,37 +200,40 @@ class Investment(object):
             dateprevious=datetrade
         return datetrade
 
-    def investstrategy03(self,datestart,moneypiece=10,ratetarget=0.20,daysmin=10,factor=10):
+    def investstrategy03(self,datestart,dateend="",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10):
         """Set a bonus rate garget, in investing period, buy more share (factor * moneypiece) when
-           price fall over average price.
+           price fall over average price. if indicated end date, it will calculate to that day and
+           the ignore ratetarget
         """
         days = 0
-        dateend=self.Datelist[-1]
-        mydatelist=self.dataperiod(datestart,dateend)["date"]
+        mydatelist=self.dataperiod(datestart,self.Datelist[-1])["date"]
         dateprevious=datestart
         for datetrade in mydatelist:
-            self.buy(datetrade,moneypiece)
             days += 1
-            if days> daysmin and self.sell(datetrade)["rate"] >= ratetarget:
-                break
+            if days > daysmin:
+                if dateend == "":
+                    if self.sell(datetrade)["rate"] >= ratetarget:
+                        break
+                if datetrade == dateend:
+                        break
             #below codes are different from previous strategy
-            
+            self.buy(datetrade,moneypiece)
             pricecurrent=self.tableNAV[datetrade]  #calculate down rate
-            if  pricecurrent < 0.98*self.priceaverage(): # it worth buy
-                self.buy(datetrade,moneypiece*factor)
+            if  pricecurrent < 0.98*self.pricestock(): # it worth buy when trade price > stock price
+                self.buy(datetrade,moneypiece*factor)    # factor decide added investing
+                #self.buy(datetrade,self.sharesaved()*self.priceaverage()) #previous stock decide investing,need huge money.
         return datetrade
 
     def testing01(self):
         pass
 
-fundlist=["001016","001593","002385","002903","002987","003766","004342","004343","004348","004744","004870",
-          "005633","005658","005918","005919","006087","006131","006912","070039","160724","260108","501037",
-          "519019"]
+fundlist=["000961","000962","001593"]
 
 for fundname in fundlist:
     a=Investment(fundname)
     buydate="2018-01-04"
-    selldate="2019-04-01"
+    selldate="2019-04-04"
+    
     print("investing from %s to %s-----------------------------------"%(buydate,fundname))
     print("-------------regular investing:---------")
     a.investregular(buydate,selldate,10)
@@ -205,25 +246,23 @@ for fundname in fundlist:
     print(b)
     a.clearaccount()
 
-##    print("-------------Strategy 2:---------")
-##
-##    b=a.investstrategy02(buydate,10,0.12,10,-0.04,50)
-##    print(a.sell(b))
-##    print(b)
-##    a.clearaccount()
-##
-##    b=a.investstrategy02(b,10,0.12,10,-0.04,50)
-##    print(a.sell(b))
-##    print(b)
-##    a.clearaccount()
 
     print("-------------Strategy 3:---------")
     temp="2018-01-24"
-    b=a.investstrategy03(temp,10,0.20,10,10)
+    b=a.investstrategy03(temp,dateend="2019-04-10",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10)
     print(a.sell(b))
     print(b)
     #a.printinvestment(temp,b)
     a.clearaccount()
+
+datetest="2019-05-09"
+print("below is for testing -----------------")
+a.buy(datetest,10)
+a.printinvestment(datetest,b)
+rate=0.04
+print("current stock and stock price: %f,%f"%(a.sharesaved(),a.pricestock()))
+print("you need money to make it change %f pecent: %f" \
+      %(rate,a.howmuchmoney2makestockpricedown(rate,a.NAVlist[a.indexdate('2019-05-10')])))
 
 
 #if you want to make it as a module, remove below code's #
