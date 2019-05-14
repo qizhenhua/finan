@@ -7,12 +7,13 @@
 class Investment(object):
     import datetime
     def __init__(self,fundcode="001593"):
+        self.fundcode=fundcode
         self.Datelist=[]
         self.NAVlist=[]
         self.Investlist=[]
+        self.Sharelist=[]
         self.tableNAV={}
-        self.readfund(fundcode)
-
+ 
     def readfund(self,filename):
         myfile = open("./data/" + filename + ".csv", "r")
         a=myfile.readlines()
@@ -26,10 +27,21 @@ class Investment(object):
         self.tableNAV=dict(zip(self.Datelist,self.NAVlist))
         self.clearaccount()
 
+    def splitdata(self,datestart,dateend=""):
+        a=self.dataperiod(datestart,dateend)
+        self.Datelist=a["date"]
+        self.NAVlist=a["NAV"]
+        self.Investlist=a["investmoney"]
+        self.Sharelist=a["share"]
+              
+
     def clearaccount(self):
         self.Investlist = []
+        self.Pricestock = []
         for i in range(len(self.NAVlist)):
             self.Investlist.append(0.0)
+            self.Sharelist.append(0.0)
+        
 
     def indexdate(self,date):
         for i in range(len(self.Datelist)):
@@ -47,17 +59,22 @@ class Investment(object):
 
     def datenext(self,datetrade,nextdays):
         i = self.indexdate(datetrade)
+        if i == self.Datelist[-1]:
+            return list(self.Datelist[-1])
+        i += 1
         j = i + nextdays
         if j > len(self.Datelist):
-            j = self.Datelist[-1]
+            j = self.Datelist[-1]+1
         return self.Datelist[i:j]
 
-    def dataperiod(self, datestart, dateend):
+    def dataperiod(self, datestart, dateend=""):
         """retrun a dict of data of date/NAV/investmoney"""
+        if dateend == "":
+            dateend=self.Datelist[-1]
         i=self.indexdate(datestart)
         j=self.indexdate(dateend) + 1
-        result = dict(zip(["date",             "NAV",             "investmoney"       ], \
-                          [self.Datelist[i:j], self.NAVlist[i:j], self.Investlist[i:j]]))
+        result = dict(zip(["date",             "NAV",             "investmoney",        "share"     ], \
+                          [self.Datelist[i:j], self.NAVlist[i:j], self.Investlist[i:j], self.Sharelist[i:j]]))
         return result
 
     def NAVaverage(self,datestart,dateend):
@@ -67,7 +84,7 @@ class Investment(object):
             sumNAV += price
         return sumNAV/len(myNAVlist)
 
-    def rategrowth(self):
+    def getrategrowth(self):
         """calculate growth rate for each day, return a whole list"""
         result=[0]
         for i in range(1,len(self.NAVlist)):
@@ -75,7 +92,7 @@ class Investment(object):
             result.append(a)
         return result
 
-    def capitalinvested(self):
+    def moneyinvested(self):
         """calculate invested money of all"""
         result=0.0
         for i in self.Investlist:
@@ -88,8 +105,25 @@ class Investment(object):
             result += i[0]/i[1]
         return result
 
-    def pricestock(self):
-        return self.capitalinvested()/self.sharesaved()
+    def getpricestocklist(self):
+        result=[]
+        for datecurrent in self.Datelist:
+            money,share=0.0,0.0
+            period=self.dataperiod(self.Datelist[0],datecurrent)
+            for investeach in period["investmoney"]:
+                money += investeach
+            for shareeach in period["share"]:
+                share += shareeach
+            if share <= 0.0:
+                price=0
+            else:
+                price=money/share
+            result.append(price)
+        result= dict(zip(self.Datelist,result))
+        return result
+
+    def pricestock(self):            
+        return self.moneyinvested()/self.sharesaved()
 
     def howmuchmoney2makestockpricedown(self,rate,pricetrade):
         """
@@ -99,23 +133,23 @@ class Investment(object):
         -----First, we have those equal functions
         shareadded=money/pricetrade     #1
         sharetotal=shareadded+self.sharesaved() #2
-        moneytotal=money+self.capitalinvested() #3
+        moneytotal=money+self.moneyinvested() #3
         pricefinal=moneytotal/sharetotal #4
         rate=(pricefinal-self.pricestock())/self.pricestock() #5
 
         -----Now we change #5:
         pricefinal=self.pricestock()*(1+rate)  # 6
         -----Combine #3 and #4, we get:
-        pricefinal=(money+self.capitalinvested())/sharetotal #7
+        pricefinal=(money+self.moneyinvested())/sharetotal #7
         -----Continue change #7:
-        money = pricefinal*sharetotal-self.capitalinvested() #7'
+        money = pricefinal*sharetotal-self.moneyinvested() #7'
         -----Input #2 to #7':
-        money = pricefinal*(shareadded+self.sharesaved())-self.capitalinvested()  #8
+        money = pricefinal*(shareadded+self.sharesaved())-self.moneyinvested()  #8
         -----Input #1 to #8:
-        money = pricefinal*(money/pricetrade+self.sharesaved())-self.capitalinvested()
-              = money*pricefinal/pricetrade+pricefinal*self.sharesaved()-self.capitalinvested()
-        (1-pricefinal/pricetrade)*money = pricefinal*self.sharesaved()-self.capitalinvested()
-        money=(pricefinal*self.sharesaved()-self.capitalinvested())/(1-pricefinal/pricetrade) #9
+        money = pricefinal*(money/pricetrade+self.sharesaved())-self.moneyinvested()
+              = money*pricefinal/pricetrade+pricefinal*self.sharesaved()-self.moneyinvested()
+        (1-pricefinal/pricetrade)*money = pricefinal*self.sharesaved()-self.moneyinvested()
+        money=(pricefinal*self.sharesaved()-self.moneyinvested())/(1-pricefinal/pricetrade) #9
 
         -----Use #9 and #6, to make codes run    
         
@@ -124,7 +158,7 @@ class Investment(object):
         money = 0
         if rate > -abs(ratelimit) and rate < abs(ratelimit):
             pricefinal=self.pricestock()*(1+rate)
-            money=(pricefinal*self.sharesaved()-self.capitalinvested())/(1-pricefinal/pricetrade)
+            money=(pricefinal*self.sharesaved()-self.moneyinvested())/(1-pricefinal/pricetrade)
         else:
             print("rate must between +/- %f !"%abs(ratelimit))
         return money
@@ -132,10 +166,11 @@ class Investment(object):
     def buy(self,date,money):
         i=self.indexdate(date)
         self.Investlist[i] = self.Investlist[i] + money
+        self.Sharelist[i] = self.Sharelist[i] + money/self.tableNAV[date]
 
     def sell(self,date):
         price=self.tableNAV[date]
-        capital=self.capitalinvested()
+        capital=self.moneyinvested()
         share=self.sharesaved()
         money=share * price
         rate=(money-capital)/capital
@@ -143,16 +178,21 @@ class Investment(object):
                         [capital,money,rate,money-capital]))
         return result
 
-    def printinvestment(self,datestart,dateend=""):
+    def printinvestment(self,datestart="",dateend=""):
+        if datestart=="":
+            datestart=self.Datelist[0]
         if dateend == "":
             dateend = self.Datelist[-1]
         a=self.dataperiod(datestart,dateend)
         dates=a["date"]
         NAVs=a["NAV"]
         money=a["investmoney"]
-        datas=list(zip(dates,NAVs,money))
+        share=a["share"]
+        datas=list(zip(dates,NAVs,money,share))
+
+        pricestock=self.getpricestocklist()
         for i in datas:
-            print(i)
+            print(i,pricestock[i[0]])
 
     def investregular(self,datestart,dateend,moneyregular):
         """The simplest investing mode, set start date / end date / money for each day, it will set money to the list
@@ -219,50 +259,26 @@ class Investment(object):
             #below codes are different from previous strategy
             self.buy(datetrade,moneypiece)
             pricecurrent=self.tableNAV[datetrade]  #calculate down rate
-            if  pricecurrent < 0.98*self.pricestock(): # it worth buy when trade price > stock price
+            if  pricecurrent < 1*self.pricestock(): # it worth buy when trade price > stock price
                 self.buy(datetrade,moneypiece*factor)    # factor decide added investing
                 #self.buy(datetrade,self.sharesaved()*self.priceaverage()) #previous stock decide investing,need huge money.
         return datetrade
 
-    def testing01(self):
-        pass
+    def testing(self,datestart,dateend=""):
+        self.readfund(self.fundcode)
+        self.splitdata(datestart)
+        dateend=self.investstrategy03(datestart,dateend="",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10)
+        self.printinvestment()
+        result=self.sell(dateend)
+        
+        print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
+              (result["capital"],result["money"],result["bonus"],result["rate"]))
+      
 
-fundlist=["000961","000962","001593"]
-
-for fundname in fundlist:
-    a=Investment(fundname)
-    buydate="2018-01-04"
-    selldate="2019-04-04"
-    
-    print("investing from %s to %s-----------------------------------"%(buydate,fundname))
-    print("-------------regular investing:---------")
-    a.investregular(buydate,selldate,10)
-    print(a.sell(selldate))
-    print(selldate)
-    a.clearaccount()
-    print("-------------Strategy 1:---------")
-    b=a.investstrategy01(buydate,10,0.10,10)
-    print(a.sell(b))
-    print(b)
-    a.clearaccount()
-
-
-    print("-------------Strategy 3:---------")
-    temp="2018-01-24"
-    b=a.investstrategy03(temp,dateend="2019-04-10",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10)
-    print(a.sell(b))
-    print(b)
-    #a.printinvestment(temp,b)
-    a.clearaccount()
-
-datetest="2019-05-09"
-print("below is for testing -----------------")
-a.buy(datetest,10)
-a.printinvestment(datetest,b)
-rate=0.04
-print("current stock and stock price: %f,%f"%(a.sharesaved(),a.pricestock()))
-print("you need money to make it change %f pecent: %f" \
-      %(rate,a.howmuchmoney2makestockpricedown(rate,a.NAVlist[a.indexdate('2019-05-10')])))
+#fundlist=["001593","000962","000961"]
+a=Investment()
+a.testing("2019-03-12")
+a.clearaccount()
 
 
 #if you want to make it as a module, remove below code's #
