@@ -240,7 +240,7 @@ class Investment(object):
             dateprevious=datetrade
         return datetrade
 
-    def investstrategy03(self,datestart,dateend="",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10):
+    def investstrategy03(self,datestart,dateend="",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10,investmax=1000):
         """Set a bonus rate garget, in investing period, buy more share (factor * moneypiece) when
            price fall over average price. if indicated end date, it will calculate to that day and
            the ignore ratetarget
@@ -259,15 +259,23 @@ class Investment(object):
             #below codes are different from previous strategy
             self.buy(datetrade,moneypiece)
             pricecurrent=self.tableNAV[datetrade]  #calculate down rate
-            if  pricecurrent < 1*self.pricestock(): # it worth buy when trade price > stock price
-                self.buy(datetrade,moneypiece*factor)    # factor decide added investing
-                #self.buy(datetrade,self.sharesaved()*self.priceaverage()) #previous stock decide investing,need huge money.
+            if  pricecurrent < self.pricestock(): # it worth buy when trade price > stock price
+                if pricecurrent <= 0.98*self.pricestock() and self.moneyinvested()<=investmax:
+                    self.buy(datetrade,self.moneyinvested())
+                elif pricecurrent < 0.98*self.pricestock():
+                    self.buy(datetrade,moneypiece*factor)    # factor decide added investing
+                elif pricecurrent < 0.96*self.pricestock():
+                    self.buy(datetrade,investmax)
+                else:
+                    self.buy(datetrade,moneypiece)
+                #self.buy(datetrade,self.moneyinvested()) #previous stock decide investing,need huge money.
         return datetrade
 
     def testing(self,datestart,dateend=""):
         self.readfund(self.fundcode)
         self.splitdata(datestart)
-        dateend=self.investstrategy03(datestart,dateend="",moneypiece=10,ratetarget=0.20,daysmin=10,factor=10)
+        dateend=self.investstrategy03(datestart,dateend=dateend,\
+                                      moneypiece=10,ratetarget=0.20,daysmin=10,factor=10,investmax=5000)
         self.printinvestment()
         result=self.sell(dateend)
         
@@ -277,7 +285,7 @@ class Investment(object):
 
 #fundlist=["001593","000962","000961"]
 a=Investment()
-a.testing("2019-03-12")
+a.testing("2018-03-10","2019-04-10")
 a.clearaccount()
 
 
