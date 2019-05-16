@@ -106,7 +106,9 @@ class Investment(object):
         return result
 
     def getpricestocklist(self):
-        result=[]
+        sharecumulationlist=[]
+        moneycumulationlist=[]
+        pricestocklist=[]
         for datecurrent in self.Datelist:
             money,share=0.0,0.0
             period=self.dataperiod(self.Datelist[0],datecurrent)
@@ -118,8 +120,10 @@ class Investment(object):
                 price=0
             else:
                 price=money/share
-            result.append(price)
-        result= dict(zip(self.Datelist,result))
+            sharecumulationlist.append(share)
+            moneycumulationlist.append(money)
+            pricestocklist.append(price)
+        result= dict(zip(self.Datelist,list(zip(pricestocklist,moneycumulationlist,sharecumulationlist))))
         return result
 
     def pricestock(self):            
@@ -163,11 +167,32 @@ class Investment(object):
             print("rate must between +/- %f !"%abs(ratelimit))
         return money
 
+    def howmuchmoney(self,datetrade):
+        pricetrade=self.tableNAV[datetrade]  #calculate down rate
+        if datetrade==self.Datelist[0]:
+            lastday=datetrade
+        else:
+            lastday=self.dateprevious(datetrade,1)[0]
+        pricelastday=self.tableNAV[lastday]
+        pricestock=self.pricestock()
+        if  pricetrade < pricestock and pricetrade < pricelastday: # it worth buy when trade price > stock price
+            ratelimit=pricetrade/pricestock-1
+            if ratelimit > -0.04:   # it avoid money uneffect
+                rate=ratelimit*0.3   # the money make the stockprice down raterange/3
+                money=self.howmuchmoney2makestockpricedown(rate,pricetrade)
+                if money > 200: # the money limit
+                    money =200
+            else:
+                money=50
+        else:
+            money=0  # if trade price > stock price, you should sell it, not spend more money
+        return money
+    
     def buy(self,date,money):
         i=self.indexdate(date)
         self.Investlist[i] = self.Investlist[i] + money
         self.Sharelist[i] = self.Sharelist[i] + money/self.tableNAV[date]
-
+        
     def sell(self,date):
         price=self.tableNAV[date]
         capital=self.moneyinvested()
@@ -255,7 +280,7 @@ class Investment(object):
                     if self.sell(datetrade)["rate"] >= ratetarget:
                         break
                 if datetrade == dateend:
-                        break
+                    break
             #below codes are different from previous strategy
             self.buy(datetrade,moneypiece)
             pricecurrent=self.tableNAV[datetrade]  #calculate down rate
@@ -270,23 +295,44 @@ class Investment(object):
                     self.buy(datetrade,moneypiece)
                 #self.buy(datetrade,self.moneyinvested()) #previous stock decide investing,need huge money.
         return datetrade
+    
+    def investstrategy04(self,datestart,dateend="",moneypiece=10,ratetarget=0.10):
+        days = 0
+        mydatelist=self.dataperiod(datestart,self.Datelist[-1])["date"]
+        for datetrade in mydatelist:
+            days += 1
+            if days > 10:                
+                if dateend == "":
+                    if self.sell(datetrade)["rate"] >= ratetarget:
+                        break
+            self.buy(datetrade,moneypiece)
+            addedmoney=self.howmuchmoney(datetrade)
+            self.buy(datetrade,addedmoney)
+        return datetrade
+    
+    
 
     def testing(self,datestart,dateend=""):
         self.readfund(self.fundcode)
         self.splitdata(datestart)
-        dateend=self.investstrategy03(datestart,dateend=dateend,\
-                                      moneypiece=10,ratetarget=0.20,daysmin=10,factor=10,investmax=5000)
-        self.printinvestment()
+##        dateend=self.investstrategy03(datestart,dateend=dateend,\
+##                                      moneypiece=10,ratetarget=0.20,daysmin=10,factor=10,investmax=5000)
+        dateend=self.investstrategy04(datestart,dateend=dateend)
+        #self.printinvestment()
         result=self.sell(dateend)
         
         print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
               (result["capital"],result["money"],result["bonus"],result["rate"]))
+        return dateend
       
 
 #fundlist=["001593","000962","000961"]
 a=Investment()
-a.testing("2018-03-10","2019-04-10")
-a.clearaccount()
+start="2016-01-27"
+for i in range(4):
+    start=a.testing(start,"")
+    print(start)
+    a.clearaccount()
 
 
 #if you want to make it as a module, remove below code's #
