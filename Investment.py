@@ -13,6 +13,7 @@ class Investment(object):
         self.Investlist=[]
         self.Sharelist=[]
         self.tableNAV={}
+        self.accountbank=10000.0
  
     def readfund(self,filename):
         myfile = open("./data/" + filename + ".csv", "r")
@@ -25,7 +26,7 @@ class Investment(object):
                 self.NAVlist.append(float(c))
                 self.Datelist.append(b[1])
         self.tableNAV=dict(zip(self.Datelist,self.NAVlist))
-        self.clearaccount()
+        self.clearaccountfund()
 
     def splitdata(self,datestart,dateend=""):
         a=self.dataperiod(datestart,dateend)
@@ -35,7 +36,7 @@ class Investment(object):
         self.Sharelist=a["share"]
               
 
-    def clearaccount(self):
+    def clearaccountfund(self):
         self.Investlist = []
         self.Pricestock = []
         for i in range(len(self.NAVlist)):
@@ -49,9 +50,11 @@ class Investment(object):
                 return i
         return i
 
-    def dateprevious(self,datetrade,previousdays):
+    def dateprevious(self,datetrade,previousdays=1):
         """return a date list of previouse days of trade date, not include trade day"""
         i = self.indexdate(datetrade)
+        if i == 0:
+            return [(self.Datelist[0])]
         j = i - previousdays
         if j < 0:
             j = 0
@@ -177,18 +180,32 @@ class Investment(object):
         pricestock=self.pricestock()
         if  pricetrade < pricestock and pricetrade < pricelastday: # it worth buy when trade price > stock price
             ratelimit=pricetrade/pricestock-1
-            if ratelimit > -0.04:   # it avoid money uneffect
-                rate=ratelimit*0.3   # the money make the stockprice down raterange/3
+            if ratelimit < -0.08:   # it avoid money uneffect
+                rate=-0.05   # the money make the stockprice down raterange/3
                 money=self.howmuchmoney2makestockpricedown(rate,pricetrade)
-                if money > 200: # the money limit
-                    money =200
+                
+##                if money > 2000: # the money limit
+##                    money =2000
             else:
-                money=50
+                money=0
         else:
             money=0  # if trade price > stock price, you should sell it, not spend more money
         return money
+
+    def checkaccountbank(self,datetrade,salarymonth=1000):
+        datelast=self.dateprevious(datetrade,1)[0]
+        lastmonth=datelast.split("-")[1]
+        trademonth=datetrade.split("-")[1]
+        if trademonth > lastmonth:
+            self.accountbank += salarymonth
     
     def buy(self,date,money):
+        if money > self.accountbank:
+            money = self.accountbank
+            self.accountbank=0.0
+        else:
+            self.accountbank -= money
+        
         i=self.indexdate(date)
         self.Investlist[i] = self.Investlist[i] + money
         self.Sharelist[i] = self.Sharelist[i] + money/self.tableNAV[date]
@@ -214,10 +231,12 @@ class Investment(object):
         money=a["investmoney"]
         share=a["share"]
         datas=list(zip(dates,NAVs,money,share))
-
         pricestock=self.getpricestocklist()
+        line=[]
         for i in datas:
-            print(i,pricestock[i[0]])
+            line=i+pricestock[i[0]]
+            print("%s %.4f %.3f %.4f %.4f %.3f %.4f %.3f %f"%(line[0],line[1],line[2],line[3],line[4],line[5],line[6], \
+                                                    line[1]/line[4]-1,self.accountbank))
 
     def investregular(self,datestart,dateend,moneyregular):
         """The simplest investing mode, set start date / end date / money for each day, it will set money to the list
@@ -297,9 +316,11 @@ class Investment(object):
         return datetrade
     
     def investstrategy04(self,datestart,dateend="",moneypiece=10,ratetarget=0.10):
+        
         days = 0
         mydatelist=self.dataperiod(datestart,self.Datelist[-1])["date"]
         for datetrade in mydatelist:
+            self.checkaccountbank(datetrade)
             days += 1
             if days > 10:                
                 if dateend == "":
@@ -318,7 +339,7 @@ class Investment(object):
 ##        dateend=self.investstrategy03(datestart,dateend=dateend,\
 ##                                      moneypiece=10,ratetarget=0.20,daysmin=10,factor=10,investmax=5000)
         dateend=self.investstrategy04(datestart,dateend=dateend)
-        #self.printinvestment()
+        self.printinvestment()
         result=self.sell(dateend)
         
         print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
@@ -327,12 +348,13 @@ class Investment(object):
       
 
 #fundlist=["001593","000962","000961"]
-a=Investment()
-start="2016-01-27"
-for i in range(4):
-    start=a.testing(start,"")
+a=Investment("001593")
+start="2016-05-03"
+
+for i in range(1):
+    start=a.testing(start,"2015-12-23")
     print(start)
-    a.clearaccount()
+    a.clearaccountfund()
 
 
 #if you want to make it as a module, remove below code's #
