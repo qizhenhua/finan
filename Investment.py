@@ -6,7 +6,7 @@
 
 class Investment(object):
     import datetime
-    def __init__(self,fundcode="001593"):
+    def __init__(self,fundcode="000961"):
         self.fundcode=fundcode
         self.Datelist=[]
         self.NAVlist=[]
@@ -108,7 +108,7 @@ class Investment(object):
             result += i[0]/i[1]
         return result
 
-    def getpricestocklist(self):
+    def getstocklist(self):
         sharecumulationlist=[]
         moneycumulationlist=[]
         pricestocklist=[]
@@ -231,12 +231,12 @@ class Investment(object):
         money=a["investmoney"]
         share=a["share"]
         datas=list(zip(dates,NAVs,money,share))
-        pricestock=self.getpricestocklist()
+        pricestock=self.getstocklist()
         line=[]
         for i in datas:
             line=i+pricestock[i[0]]
-            print("%s %.4f %.3f %.4f %.4f %.3f %.4f %.3f %f"%(line[0],line[1],line[2],line[3],line[4],line[5],line[6], \
-                                                    line[1]/line[4]-1,self.accountbank))
+            print("%s %.4f %.3f %.4f %.4f %.3f %.4f %.3f"%(line[0],line[1],line[2],line[3],line[4],line[5],line[6], \
+                                                    line[1]/line[4]-1))
 
     def investregular(self,datestart,dateend,moneyregular):
         """The simplest investing mode, set start date / end date / money for each day, it will set money to the list
@@ -348,7 +348,7 @@ class Investment(object):
       
 
 #fundlist=["001593","000962","000961"]
-a=Investment("001593")
+a=Investment("000962")
 start="2016-05-03"
 
 for i in range(1):
