@@ -91,34 +91,29 @@ class Investment(object):
         """calculate growth rate for each day, return a whole list"""
         result=[0]
         for i in range(1,len(self.NAVlist)):
-            a=(self.NAVlist[i]-self.NAVlist[i-1])/self.NAVlist[i-1]
+            a=self.NAVlist[i]/self.NAVlist[i-1]-1
             result.append(a)
         return result
 
     def moneyinvested(self):
         """calculate invested money of all"""
-        result=0.0
-        for i in self.Investlist:
-            result += i
+        result=sum(self.Investlist)
         return result
 
     def sharesaved(self):
-        result=0.0
-        for i in zip(self.Investlist,self.NAVlist):
-            result += i[0]/i[1]
+        result=sum(list(map(lambda x,y : x/y,self.Investlist,self.NAVlist)))
         return result
 
     def getstocklist(self):
+        
         sharecumulationlist=[]
         moneycumulationlist=[]
         pricestocklist=[]
         for datecurrent in self.Datelist:
             money,share=0.0,0.0
             period=self.dataperiod(self.Datelist[0],datecurrent)
-            for investeach in period["investmoney"]:
-                money += investeach
-            for shareeach in period["share"]:
-                share += shareeach
+            money=sum(period["investmoney"])
+            share=sum(period["share"])
             if share <= 0.0:
                 price=0
             else:
@@ -161,7 +156,7 @@ class Investment(object):
         -----Use #9 and #6, to make codes run    
         
         """
-        ratelimit=(pricetrade-self.pricestock())/self.pricestock()  # the rate cann't out of range.
+        ratelimit=pricetrade/self.pricestock()-1  # the rate cann't out of range.
         money = 0
         if rate > -abs(ratelimit) and rate < abs(ratelimit):
             pricefinal=self.pricestock()*(1+rate)
