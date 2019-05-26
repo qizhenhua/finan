@@ -35,7 +35,6 @@ class Investment(object):
         self.Investlist=a["investmoney"]
         self.Sharelist=a["share"]
               
-
     def clearaccountfund(self):
         self.Investlist = []
         self.Pricestock = []
@@ -100,8 +99,8 @@ class Investment(object):
         result=sum(self.Investlist)
         return result
 
-    def sharesaved(self):
-        result=sum(list(map(lambda x,y : x/y,self.Investlist,self.NAVlist)))
+    def sharesaved(self,ratebuy=0.00):
+        result=sum(list(map(lambda x,y : x*(1-ratebuy)/y,self.Investlist,self.NAVlist)))
         return result
 
     def getstocklist(self):
@@ -194,7 +193,7 @@ class Investment(object):
         if trademonth > lastmonth:
             self.accountbank += salarymonth
     
-    def buy(self,date,money):
+    def buy(self,date,money,ratefee=0.0):
         if money > self.accountbank:
             money = self.accountbank
             self.accountbank=0.0
@@ -203,10 +202,11 @@ class Investment(object):
         
         i=self.indexdate(date)
         self.Investlist[i] = self.Investlist[i] + money
-        self.Sharelist[i] = self.Sharelist[i] + money/self.tableNAV[date]
+        self.Sharelist[i] = self.Sharelist[i] + money*(1-ratefee)/self.tableNAV[date]
         
     def sell(self,date):
         price=self.tableNAV[date]
+        print(price)
         capital=self.moneyinvested()
         share=self.sharesaved()
         money=share * price
@@ -340,16 +340,39 @@ class Investment(object):
         print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
               (result["capital"],result["money"],result["bonus"],result["rate"]))
         return dateend
+
+    def setinvesting(self,datestart,investlist,ratefee=0.00):
+        self.readfund(self.fundcode)
+        self.splitdata(datestart)
+        self.Investlist=investlist
+        self.Sharelist=list(map(lambda x,y:x*(1-ratefee)/y,self.Investlist,self.NAVlist))
+        self.printinvestment()
+        result=self.sell(self.Datelist[-1])
+        
+        print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
+              (result["capital"],result["money"],result["bonus"],result["rate"]))
       
 
 #fundlist=["001593","000962","000961"]
-a=Investment("000962")
-start="2016-05-03"
+##a=Investment("000962")
+##start="2016-05-03"
+##start=a.testing(start,"2015-12-23")
+a1=Investment("001593")
+b1=[10,10,10,10,10,20,10,10,10,60,30,10,0,40,60]
+a1.setinvesting("2019-05-06",b1)
 
-for i in range(1):
-    start=a.testing(start,"2015-12-23")
-    print(start)
-    a.clearaccountfund()
+a2=Investment("001593")
+b2=[10,10,10,10,30,10,10,10,80,10,10,100,20,80]
+a2.setinvesting("2019-05-07",b2)
+
+a3=Investment("000961")
+b3=[10,0,0,10,0,50,10,20,20,10,10,160,20,30]
+a3.setinvesting("2019-05-07",b3,0.001)
+
+a4=Investment("000962")
+b4=[90,100,10,10,90,20,80]
+a4.setinvesting("2019-05-16",b4,0.001)
+
 
 
 #if you want to make it as a module, remove below code's #
