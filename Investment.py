@@ -204,11 +204,13 @@ class Investment(object):
         self.Investlist[i] = self.Investlist[i] + money
         self.Sharelist[i] = self.Sharelist[i] + money*(1-ratefee)/self.tableNAV[date]
         
-    def sell(self,date):
+    def sell(self,date,share=""):
+        if share=="":
+            share=self.sharesaved()
         price=self.tableNAV[date]
         print(price)
-        capital=self.moneyinvested()
-        share=self.sharesaved()
+        capital=self.moneyinvested()*share/self.sharesaved()
+##        share=self.sharesaved()
         money=share * price
         rate=(money-capital)/capital
         result=dict(zip(["capital","money","rate","bonus"],\
@@ -358,19 +360,19 @@ class Investment(object):
 ##start="2016-05-03"
 ##start=a.testing(start,"2015-12-23")
 a1=Investment("001593")
-b1=[10,10,10,10,10,20,10,10,10,60,30,10,0,40,60]
+b1=[10,10,10,10,10,20,10,10,10,60,30,10,0,40,60,0]
 a1.setinvesting("2019-05-06",b1)
 
 a2=Investment("001593")
-b2=[10,10,10,10,30,10,10,10,80,10,10,100,20,80]
+b2=[10,10,10,10,30,10,10,10,80,10,10,100,20,80,0]
 a2.setinvesting("2019-05-07",b2)
 
 a3=Investment("000961")
-b3=[10,0,0,10,0,50,10,20,20,10,10,160,20,30]
+b3=[10,0,0,10,0,50,10,20,20,10,10,160,20,30,0]
 a3.setinvesting("2019-05-07",b3,0.001)
 
 a4=Investment("000962")
-b4=[90,100,10,10,90,20,80]
+b4=[90,100,10,10,90,20,80,0]
 a4.setinvesting("2019-05-16",b4,0.001)
 
 
