@@ -15,7 +15,9 @@ class Investment(object):
         self.tableNAV={}
         self.accountbank=10000.0
  
-    def readfund(self,filename):
+    def readfund(self,filename=""):
+        if filename=="":
+            filename=self.fundcode
         myfile = open("./data/" + filename + ".csv", "r")
         a=myfile.readlines()
         myfile.close()
@@ -35,6 +37,7 @@ class Investment(object):
         self.Investlist=a["investmoney"]
         self.Sharelist=a["share"]
               
+
     def clearaccountfund(self):
         self.Investlist = []
         self.Pricestock = []
@@ -90,29 +93,34 @@ class Investment(object):
         """calculate growth rate for each day, return a whole list"""
         result=[0]
         for i in range(1,len(self.NAVlist)):
-            a=self.NAVlist[i]/self.NAVlist[i-1]-1
+            a=(self.NAVlist[i]-self.NAVlist[i-1])/self.NAVlist[i-1]
             result.append(a)
         return result
 
     def moneyinvested(self):
         """calculate invested money of all"""
-        result=sum(self.Investlist)
+        result=0.0
+        for i in self.Investlist:
+            result += i
         return result
 
-    def sharesaved(self,ratebuy=0.00):
-        result=sum(list(map(lambda x,y : x*(1-ratebuy)/y,self.Investlist,self.NAVlist)))
+    def sharesaved(self):
+        result=0.0
+        for i in zip(self.Investlist,self.NAVlist):
+            result += i[0]/i[1]
         return result
 
     def getstocklist(self):
-        
         sharecumulationlist=[]
         moneycumulationlist=[]
         pricestocklist=[]
         for datecurrent in self.Datelist:
             money,share=0.0,0.0
             period=self.dataperiod(self.Datelist[0],datecurrent)
-            money=sum(period["investmoney"])
-            share=sum(period["share"])
+            for investeach in period["investmoney"]:
+                money += investeach
+            for shareeach in period["share"]:
+                share += shareeach
             if share <= 0.0:
                 price=0
             else:
@@ -155,7 +163,7 @@ class Investment(object):
         -----Use #9 and #6, to make codes run    
         
         """
-        ratelimit=pricetrade/self.pricestock()-1  # the rate cann't out of range.
+        ratelimit=(pricetrade-self.pricestock())/self.pricestock()  # the rate cann't out of range.
         money = 0
         if rate > -abs(ratelimit) and rate < abs(ratelimit):
             pricefinal=self.pricestock()*(1+rate)
@@ -193,7 +201,7 @@ class Investment(object):
         if trademonth > lastmonth:
             self.accountbank += salarymonth
     
-    def buy(self,date,money,ratefee=0.0):
+    def buy(self,date,money):
         if money > self.accountbank:
             money = self.accountbank
             self.accountbank=0.0
@@ -202,15 +210,12 @@ class Investment(object):
         
         i=self.indexdate(date)
         self.Investlist[i] = self.Investlist[i] + money
-        self.Sharelist[i] = self.Sharelist[i] + money*(1-ratefee)/self.tableNAV[date]
+        self.Sharelist[i] = self.Sharelist[i] + money/self.tableNAV[date]
         
-    def sell(self,date,share=""):
-        if share=="":
-            share=self.sharesaved()
+    def sell(self,date):
         price=self.tableNAV[date]
-        print(price)
-        capital=self.moneyinvested()*share/self.sharesaved()
-##        share=self.sharesaved()
+        capital=self.moneyinvested()
+        share=self.sharesaved()
         money=share * price
         rate=(money-capital)/capital
         result=dict(zip(["capital","money","rate","bonus"],\
@@ -342,43 +347,21 @@ class Investment(object):
         print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
               (result["capital"],result["money"],result["bonus"],result["rate"]))
         return dateend
-
-    def setinvesting(self,datestart,investlist,ratefee=0.00):
-        self.readfund(self.fundcode)
-        self.splitdata(datestart)
-        self.Investlist=investlist
-        self.Sharelist=list(map(lambda x,y:x*(1-ratefee)/y,self.Investlist,self.NAVlist))
-        self.printinvestment()
-        result=self.sell(self.Datelist[-1])
-        
-        print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
-              (result["capital"],result["money"],result["bonus"],result["rate"]))
       
 
 #fundlist=["001593","000962","000961"]
 ##a=Investment("000962")
 ##start="2016-05-03"
-##start=a.testing(start,"2015-12-23")
-a1=Investment("001593")
-b1=[10,10,10,10,10,20,10,10,10,60,30,10,0,40,60,0]
-a1.setinvesting("2019-05-06",b1)
-
-a2=Investment("001593")
-b2=[10,10,10,10,30,10,10,10,80,10,10,100,20,80,0]
-a2.setinvesting("2019-05-07",b2)
-
-a3=Investment("000961")
-b3=[10,0,0,10,0,50,10,20,20,10,10,160,20,30,0]
-a3.setinvesting("2019-05-07",b3,0.001)
-
-a4=Investment("000962")
-b4=[90,100,10,10,90,20,80,0]
-a4.setinvesting("2019-05-16",b4,0.001)
-
+##
+##for i in range(1):
+##    start=a.testing(start,"2015-12-23")
+##    print(start)
+##    a.clearaccountfund()
 
 
 #if you want to make it as a module, remove below code's #
-#def main():
-#
-#if __name__=="__main__":
-#    main()
+def main():
+    pass
+
+if __name__=="__main__":
+    main()
