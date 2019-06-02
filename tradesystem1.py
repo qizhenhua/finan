@@ -1,23 +1,19 @@
 import Investment
-market=Investment.Investment()
+market=Investment.Investment("001593")
 market.readfund()
 
-datestart="2018-01-16"
+datestart="2016-12-14"
 market.splitdata(datestart)
-listprice=market.NAVlist[:10]
-listinvest=[]
-moneyinbank=0.0
+
+listprice=market.NAVlist[:1]
+listinvest=[100.0]
+moneyinbank=-sum(listinvest)
 bonus=0.0
 status="Do nothing!"
 
-
-
-for i in range(10):
-    listinvest.append(100.0)
-
-
-current=10
+current=1
 pricebase=market.tableNAV[market.Datelist[current-1]]
+
 
 while current<len(market.Datelist):
     status="do nothing!"
@@ -34,27 +30,29 @@ while current<len(market.Datelist):
     print(pricetoday,pricelast)
     
     if pricetoday>pricelast:
-        if ratemax[0]>0.05:
+        if ratemax[0]>0.04 and listinvest != []:
             listprice.pop(ratemax[1])
             money=listinvest.pop(ratemax[1])
             moneyinbank +=money
             bonus +=ratemax[0]*money
             status="Sell!"
+            
     else:
-        if ratemin[0]<-0.04:
+        if ratemin[0]<-0.05:
             listprice[ratemin[1]]=2/(1/listprice[ratemin[1]]+1/pricetoday)
             money=listinvest[ratemin[1]]
             listinvest[ratemin[1]] += money
             moneyinbank -= money
             status="Buy!"
-    if status == "do nothing!":
-        if pricetoday/pricebase-1 < -0.01:
-            listprice.append(pricetoday)
-            listinvest.append(100.0)
-            moneyinbank -= 100.0
-            pricebase=pricetoday
-            status="Store!"
-        elif pricetoday > pricebase:
+##    if status == "do nothing!":
+    if pricetoday/pricebase-1 < -0.005 and len(listinvest) < 20:
+        listprice.append(pricetoday)
+        listinvest.append(100.0)
+        moneyinbank -= 100.0
+        pricebase=pricetoday
+        status="Store!"
+        
+    if pricetoday>pricelast:
             pricebase=pricetoday
 
     current +=1
