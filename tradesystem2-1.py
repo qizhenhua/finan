@@ -10,17 +10,27 @@ ratepulldown=ratescope*0.4
 print("ratescope: %f, ratesellshort: %f, rateselllong: %f, ratebuy: %f, ratepulldown: %f "\
       %(ratescope,ratesellshort,rateselllong,ratebuy,ratepulldown))
 
-datestart="2017-04-30"
+
+ratesellshortup = 0.06
+ratesellshortlow=0.12
+rateselllong = 0.20
+ratebuy = -0.01
+ratepulldown = -0.4
+
+datestart="2015-04-30"
 market.splitdata(datestart)
 
+investunit=1000.0
+
 listpriceshort=market.NAVlist[:1]
-listinvestshort=[200.0]
+listinvestshort=[investunit]
 
 listpricelong=[]
 listinvestlong=[]
 
 moneyinbank=-sum(listinvestshort)
 bonus=0.0
+
 status="Do nothing!"
 
 current=1
@@ -48,7 +58,7 @@ while current<len(market.Datelist):
         if listpriceshort != []:
             indexremove=[]
             for i in range(len(listrateshort)):
-                if (listrateshort[i][0]>ratesellshort*0.3 and listrateshort[i][0] <= ratesellshort) or listrateshort[i][0] > rateselllong:
+                if (listrateshort[i][0]>ratesellshort*0.3 and listrateshort[i][0] <= ratesellshortup) or listrateshort[i][0] > ratesellshortlow:
                     listpriceshort[listrateshort[i][1]]
                     money=listinvestshort[listrateshort[i][1]]
                     moneyinbank += money
@@ -83,16 +93,16 @@ while current<len(market.Datelist):
 
     elif pricetoday/pricebase-1 < -0.0:                     # buy
 
-        if len(listpricelong)+len(listpriceshort) < 50 and pricetoday/pricebase-1 < -ratebuy:  #control base
+        if len(listpricelong)+len(listpriceshort) < 100 and pricetoday/pricebase-1 <= ratebuy:  #control base
 
             listpriceshort.append(pricetoday)
-            listinvestshort.append(200.0)
-            moneyinbank -= 200.0
+            listinvestshort.append(investunit)
+            moneyinbank -= investunit
             status=status + "-Store!-"
             
         if listpricelong != []:
             for i in range(len(listratelong)):
-                if listratelong[i][0] <= -ratepulldown:
+                if listratelong[i][0] <= ratepulldown:
                     listpricelong[listratelong[i][1]] = 2/(1/listpricelong[listratelong[i][1]] + 1/pricetoday) #combine
                     money=listinvestlong[listratelong[i][1]]
                     listinvestlong[listratelong[i][1]] += money
@@ -102,7 +112,7 @@ while current<len(market.Datelist):
         if listpriceshort != []:
             indexremove=[]
             for i in range(len(listrateshort)):
-                if listrateshort[i][0] <= -ratepulldown:
+                if listrateshort[i][0] <= ratepulldown:
                     listpriceshort[listrateshort[i][1]] = 2/(1/listpriceshort[listrateshort[i][1]] + 1/pricetoday)
                     money = listinvestshort[listrateshort[i][1]]
                     listinvestshort[listrateshort[i][1]] += money
@@ -124,7 +134,7 @@ while current<len(market.Datelist):
             
     current +=1
     print("today is %s---%s"%(today, status))
-    print("short:",listpriceshort)
-    print("long :",listpricelong)
+##    print("short:",listpriceshort)
+##    print("long :",listpricelong)
     print("you reback money: %.3f and bouns: %.3f"%(moneyinbank,bonus))
     input()
