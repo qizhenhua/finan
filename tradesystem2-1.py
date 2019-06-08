@@ -1,5 +1,5 @@
 import Investment
-market=Investment.Investment("000962")
+market=Investment.Marketfund("000962")
 market.readfund()
 rateave=(max(market.NAVlist)+min(market.NAVlist))/2
 ratescope=max(market.NAVlist)/rateave-1

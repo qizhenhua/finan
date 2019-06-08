@@ -4,7 +4,7 @@
 #Usage:
 #code is below.
 
-class Investment(object):
+class Marketfund(object):
     import datetime
     def __init__(self,fundcode="000961"):
         self.fundcode=fundcode
@@ -347,7 +347,32 @@ class Investment(object):
         print("capital: %.2f, money: %.2f, bouns: %.2f, rate: %.4f"% \
               (result["capital"],result["money"],result["bonus"],result["rate"]))
         return dateend
-      
+
+class Investmentitem(object):
+    def __init__(self,fundcode,date,price,money):
+        self.date=date
+        self.price=price
+        self.money=money
+        self.fundcode=fundcode
+        pass
+
+    def getrate(self,pricecurrent):
+        return pricecurrent/price-1
+    def getbonus(self,pricecurrent):
+        return money*self.getrate(pricecurrent)
+    def combineinvestment(self,addeditem):
+        #share=money/price
+        moneytotal = self.money + addeditem.money
+        pricecombine=moneytotal/(self.money/self.price+addeditem.money/addeditem.price)
+        self.money=moneytotal
+        self.price=pricecombine
+    def getmiddleprice(self,pricecurrent):
+        pricetarget=(self.price+pricecurrent)/2
+        moneyadded=(self.money/self.price-self.money/pricetarget) \
+                    /(1/pricetarget-1/pricecurrent)
+        return moneyadded
+        
+    
 
 #fundlist=["001593","000962","000961"]
 ##a=Investment("000962")
@@ -361,6 +386,14 @@ class Investment(object):
 
 #if you want to make it as a module, remove below code's #
 def main():
+    a=Investmentitem("000962","2019-01-01",1.22,1000)
+    c=a.getmiddleprice(1.02)
+    print(c)
+    b=Investmentitem("000962","2019-02-01",1.02,c)
+    print(a.price)
+    print(b.price)
+    a.combineinvestment(b)
+    print(a.price)
     pass
 
 if __name__=="__main__":
