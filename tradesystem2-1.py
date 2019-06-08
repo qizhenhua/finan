@@ -14,10 +14,10 @@ print("ratescope: %f, ratesellshort: %f, rateselllong: %f, ratebuy: %f, ratepull
 ratesellshortup = 0.06
 ratesellshortlow=0.12
 rateselllong = 0.20
-ratebuy = -0.01
+ratebuy = -0.008
 ratepulldown = -0.4
 
-datestart="2015-04-30"
+datestart="2019-01-01"
 market.splitdata(datestart)
 
 investunit=1000.0
